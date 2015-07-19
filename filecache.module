@@ -3,7 +3,7 @@
 /**
  * Maximum files to delete in a single cron run.
  */
-define('FILECACHE_CRON_MAX_FILES', 100);
+define('FILECACHE_CRON_MAX_FILES', 10);
 
 /**
  * Implements hook_cron().
