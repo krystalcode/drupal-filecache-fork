@@ -404,8 +404,11 @@ class DrupalFileCache implements DrupalCacheInterface {
       if ($cache->expire == CACHE_PERMANENT) {
         continue;
       }
-      if ($cache->expire == CACHE_TEMPORARY ||
-          $cache->expire < REQUEST_TIME) {
+      $expiry_date = $cache->expire;
+      if ($cache->expire == CACHE_TEMPORARY) {
+        $expiry_date = $cache->created + variable_get('cache_lifetime', 0);
+      }
+      if ($expiry_date < REQUEST_TIME) {
         @unlink($filename);
       }
     } // foreach $filename
