@@ -358,16 +358,18 @@ class DrupalFileCache implements DrupalCacheInterface {
     $list = array();
     $filename_prefix = $this->bin . '-' . $this->encode_cid($cid_prefix);
     $filename_prefix_len = strlen($filename_prefix);
-    $cwd = getcwd();
-    chdir($this->directory);
-    $dh = opendir('.');
-    while (($filename = readdir($dh)) !== FALSE) {
-      if (strncmp($filename, $filename_prefix, $filename_prefix_len) === 0) {
-        $list[] = $filename;
+    if (is_dir($this->directory)) {
+      $cwd = getcwd();
+      chdir($this->directory);
+      $dh = opendir('.');
+      while (($filename = readdir($dh)) !== FALSE) {
+        if (strncmp($filename, $filename_prefix, $filename_prefix_len) === 0) {
+          $list[] = $filename;
+        }
       }
+      closedir($dh);
+      chdir($cwd);
     }
-    closedir($dh);
-    chdir($cwd);
     return $list;
   }
 
