@@ -210,7 +210,7 @@ class DrupalFileCache implements DrupalCacheInterface {
         $results[$cid] = $cache;
       }
     }
-    foreach (array_keys($result) as $cid) {
+    foreach (array_keys($results) as $cid) {
       if (($key = array_search($cid, $cids)) !== false) {
         unset($cids[$key]);
       }
