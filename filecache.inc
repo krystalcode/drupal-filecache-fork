@@ -133,6 +133,10 @@ class DrupalFileCache implements DrupalCacheInterface {
    *   The cache or FALSE on failure.
    */
   function get($cid) {
+    if (!is_string($cid)) {
+      return FALSE;
+    }
+
     $filename = $this->prefix . $this->encode_cid($cid);
 
     // XXX should be in getMultiple() and get() to call getMultiple()
@@ -229,6 +233,10 @@ class DrupalFileCache implements DrupalCacheInterface {
    *     the given time, after which it behaves like CACHE_TEMPORARY.
    */
   function set($cid, $data, $expire = CACHE_PERMANENT) {
+    if (!is_string($cid)) {
+      return;
+    }
+
     $filename = $this->prefix . $this->encode_cid($cid);
 
     // Open file for that entry, handling errors that may arise
