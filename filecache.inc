@@ -269,7 +269,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       return;
     }
 
-    $cache = new StdClass;
+    $cache = new StdClass; // XXX Should be custom class
     $cache->cid = $cid;
     $cache->created = REQUEST_TIME;
     $cache->expire = $expire;

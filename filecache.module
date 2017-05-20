@@ -3,7 +3,7 @@
 /**
  * Maximum files to delete in a single cron run.
  */
-define('FILECACHE_CRON_MAX_FILES', 10);
+define('FILECACHE_CRON_MAX_FILES', 100);
 
 /**
  * Implements hook_cron().
@@ -25,10 +25,24 @@ function filecache_cron() {
   // XXX just adapted from DrupalFileCache::delete_expired()
 
   $cache_size = 0;
+  $checked_files = 0;
   $cwd = getcwd();
   chdir($filecache_directory);
   $dh = opendir('.');
   while (($filename = readdir($dh)) !== FALSE) {
+    // gather statistics
+    $stat = @stat($filename);
+    if ($stat === FALSE) {
+      continue;
+    }
+    $cache_size += $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
+
+    // If processing limit is reached, skip the rest of the files but continue gathering statistics
+    $checked_files++;
+    if ($checked_files > FILECACHE_CRON_MAX_FILES) {
+        continue;
+    }
+      
     // XXX this tries to read every file regardless if it's cache entry
     // XXX reads all entries XXX
     $content = @file_get_contents($filename);
@@ -40,16 +54,10 @@ function filecache_cron() {
       continue; // broken file - don't remove it because it may not belong to us
     }
 
-    // gather statistics
-    $stat = @stat($filename);
-    if ($stat === FALSE) {
-      continue;
-    }
-    $cache_size += $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
-
     if ($cache->expire == CACHE_PERMANENT) {
       continue;
     }
+
     $expiry_date = $cache->expire;
     if ($cache->expire == CACHE_TEMPORARY) {
       $expiry_date = $cache->created + variable_get('cache_lifetime', 0);
