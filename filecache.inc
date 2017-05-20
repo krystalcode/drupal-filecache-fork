@@ -400,12 +400,13 @@ class DrupalFileCache implements DrupalCacheInterface {
   /**
    * Delete expired cache entries.
    */
-  protected function delete_expired() {
-    $cwd = getcwd();
-    chdir($this->directory);
+  protected function delete_expired($cache_flush = NULL) {
+    if (!isset($cache_flush)) {
+      $cache_flush = REQUEST_TIME;
+    }
     foreach ($this->all() as $filename) {
       // XXX reads all entries XXX
-      $content = @file_get_contents($filename);
+      $content = @file_get_contents($this->directory . '/' . $filename);
       if ($content === FALSE) {
         continue;
       }
@@ -420,11 +421,10 @@ class DrupalFileCache implements DrupalCacheInterface {
       if ($cache->expire == CACHE_TEMPORARY) {
         $expiry_date = $cache->created + variable_get('cache_lifetime', 0);
       }
-      if ($expiry_date < REQUEST_TIME) {
+      if ($expiry_date < $cache_flush) {
         @unlink($filename);
       }
     } // foreach $filename
-    chdir($cwd);
   }
 
   /**
@@ -443,24 +443,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       // Reset the variable immediately to prevent a meltdown in heavy load situations.
       variable_set('cache_flush_' . $this->bin, 0);
       // Time to flush old cache data
-      $cwd = getcwd();
-      chdir($this->directory);
-      foreach ($this->all() as $filename) {
-        // XXX reads all entries XXX
-        $content = @file_get_contents($filename);
-        if ($content === FALSE) {
-          continue;
-        }
-        $cache = @unserialize($content);
-        if ($cache === FALSE) {
-          continue;
-        }
-        if ($cache->expire != CACHE_PERMANENT &&
-            $cache->expire <= $cache_flush) {
-          @unlink($filename);
-        }
-      } // foreach $filename
-      chdir($cwd);
+      $this->delete_expired($cache_flush);
     } // if $cache_flush
 
     $recursion = FALSE;
@@ -476,7 +459,7 @@ class DrupalFileCache implements DrupalCacheInterface {
    *   TRUE if the cache bin specified is empty.
    */
   function isEmpty() {
-    return count($this->all()) == 0;
+    return count($this->all()) === 0;
   }
 
 }
