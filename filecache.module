@@ -1,11 +1,6 @@
 <?php // -*- indent-tabs-mode:nil -*-
 
 /**
- * Maximum files to delete in a single cron run.
- */
-define('FILECACHE_CRON_MAX_FILES', 100);
-
-/**
  * Implements hook_cron().
  *
  * @see hook_cron()
@@ -25,7 +20,6 @@ function filecache_cron() {
   // XXX just adapted from DrupalFileCache::delete_expired()
 
   $cache_size = 0;
-  $checked_files = 0;
   $cwd = getcwd();
   chdir($filecache_directory);
   $dh = opendir('.');
@@ -37,12 +31,6 @@ function filecache_cron() {
     }
     $cache_size += $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
 
-    // If processing limit is reached, skip the rest of the files but continue gathering statistics
-    $checked_files++;
-    if ($checked_files > FILECACHE_CRON_MAX_FILES) {
-        continue;
-    }
-      
     // XXX this tries to read every file regardless if it's cache entry
     // XXX reads all entries XXX
     $content = @file_get_contents($filename);
