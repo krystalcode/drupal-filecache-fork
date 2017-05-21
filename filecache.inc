@@ -70,13 +70,13 @@ class DrupalFileCache implements DrupalCacheInterface {
   /**
    * Implement unified cache bin prefix as described in https://www.drupal.org/node/1324812
    * 
-   * By default, conf_path() is used as prefix after replacing '/' with '-'.
+   * By default, conf_path() is used as prefix after replacing '/' with '-', and adding final '-'.
    * 
    * @global type $conf
-   * @return string The prefix with '-' appended, or empty string if there is no prefix;
+   * @return string The prefix, or empty string if there is no prefix;
    */
   private function get_cache_prefix() {
-    $prefix = str_replace('/', '-', conf_path());
+    $prefix = str_replace('/', '-', conf_path()) . '-';
     global $conf;
     if (array_key_exists('cache_prefix', $conf)) {
       $cache_prefix_conf = $conf['cache_prefix'];
@@ -91,7 +91,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       }
     }
     if (is_string($prefix)) {
-      return $prefix . '-';
+      return $prefix;
     } else {
       return "";
     }

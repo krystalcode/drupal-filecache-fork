@@ -80,6 +80,25 @@ $conf['cache_backends'] = array('sites/all/modules/filecache/filecache.inc');
 $conf['cache_default_class'] = 'DrupalFileCache';
 $conf['filecache_directory'] = '/tmp/filecache-' . substr(conf_path(), 6);
 
+* Advanced configuration
+
+** Cache prefix 
+
+XXX Just examples from http://cgit.drupalcode.org/redis/tree/README.md for now.
+
+$settings['cache_prefix'] = 'mysite_';
+
+$settings['cache_prefix']['default'] = 'mysite_';
+
+// Default behavior for all bins, prefix is 'mysite_'.
+$settings['cache_prefix']['default'] = 'mysite_';
+// Set no prefix explicitely for 'cache' and 'cache_bootstrap' bins.
+$settings['cache_prefix']['cache'] = FALSE;
+$settings['cache_prefix']['cache_bootstrap'] = FALSE;
+// Set another prefix for 'cache_menu' bin.
+$settings['cache_prefix']['cache_menu'] = 'menumysite_';
+
+
 * Disabling filecache
 
 You may comment the $conf settings for DrupalFileCache to disable filecache.
