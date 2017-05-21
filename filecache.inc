@@ -58,35 +58,35 @@ function filecache_directory($bin = FALSE) {
   return $filecache_directory;
 }
 
-  /**
-   * Implement unified cache bin prefix as described in https://www.drupal.org/node/1324812
-   * 
-   * By default, conf_path() is used as prefix after replacing '/' with '_', and adding final '_'.
-   * 
-   * @global type $conf
-   * @return string The prefix, or empty string if there is no prefix;
-   */
-  function get_cache_prefix($bin = FALSE) {
-    $prefix = str_replace('/', '_', conf_path()) . '_';
-    global $conf;
-    if (array_key_exists('cache_prefix', $conf)) {
-      $cache_prefix_conf = $conf['cache_prefix'];
-      if ($cache_prefix_conf === FALSE || is_string($cache_prefix_conf)) {
-        $prefix = $cache_prefix_conf;
-      } elseif (is_array($cache_prefix_conf)) {
-        if (is_string($bin) && array_key_exists($bin, $cache_prefix_conf)) {
-          $prefix = $cache_prefix_conf[$bin];
-        } else if (array_key_exists('default', $cache_prefix_conf)) {
-          $prefix = $cache_prefix_conf['default'];
-        }
+/**
+ * Implement unified cache bin prefix as described in https://www.drupal.org/node/1324812
+ * 
+ * By default, conf_path() is used as prefix after replacing '/' with '_', and adding final '_'.
+ * 
+ * @global type $conf
+ * @return string The prefix, or empty string if there is no prefix;
+ */
+function get_cache_prefix($bin = FALSE) {
+  $prefix = str_replace('/', '_', conf_path()) . '_';
+  global $conf;
+  if (array_key_exists('cache_prefix', $conf)) {
+    $cache_prefix_conf = $conf['cache_prefix'];
+    if ($cache_prefix_conf === FALSE || is_string($cache_prefix_conf)) {
+      $prefix = $cache_prefix_conf;
+    } elseif (is_array($cache_prefix_conf)) {
+      if (is_string($bin) && array_key_exists($bin, $cache_prefix_conf)) {
+        $prefix = $cache_prefix_conf[$bin];
+      } else if (array_key_exists('default', $cache_prefix_conf)) {
+        $prefix = $cache_prefix_conf['default'];
       }
     }
-    if (is_string($prefix)) {
-      return $prefix;
-    } else {
-      return "";
-    }
   }
+  if (is_string($prefix)) {
+    return $prefix;
+  } else {
+    return "";
+  }
+}
   
 function filecache_registry_pathname() {
   return filecache_directory() . '/' . get_cache_prefix() . FILECACHE_CACHE_BIN_REGISTRY;

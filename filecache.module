@@ -7,16 +7,6 @@
  */
 function filecache_cron() {
 
-  if (!function_exists('filecache_directory')) {
-    // filecache.inc is not included
-    return;
-  }
-
-  $filecache_directory = filecache_directory();
-  if ($filecache_directory === FALSE) {
-    return;
-  }
-
   // Check if filecache is enabled in settings.php
   $filecache_enabled = FALSE;
   global $conf;
@@ -30,50 +20,61 @@ function filecache_cron() {
   }
 
   // If filecache is disabled, be sure to remove filecache bin registry
+  $filecache_registry_pathname = filecache_registry_pathname();
   if (!$filecache_enabled) {
-    @unlink(filecache_registry_pathname());
+    @unlink($filecache_registry_pathname);
+    return;
+  }
+  
+  // Load cache bin registry
+  $registry = @unserialize(@file_get_contents($filecache_registry_pathname));
+  if (!is_array($registry)) {
+    @unlink($filecache_registry_pathname);
     return;
   }
   
   // XXX just adapted from DrupalFileCache::delete_expired()
 
   $cache_size = 0;
-  $cwd = getcwd();
-  chdir($filecache_directory);
-  $dh = opendir('.');
-  while (($filename = readdir($dh)) !== FALSE) {
-    // gather statistics
-    $stat = @stat($filename);
-    if ($stat === FALSE) {
+  foreach ($registry as $bin => $value) {
+    $bin_directory = filecache_directory($bin) . '/' . get_cache_prefix($bin) . $bin;
+    if (($dh = opendir($bin_directory)) === FALSE) {
       continue;
     }
-    $cache_size += $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
+    while (($filename = readdir($dh)) !== FALSE) {
+      $pathname = $bin_directory . '/' . $filename;
+      // gather statistics
+      $stat = @stat($pathname);
+      if ($stat === FALSE || is_dir($pathname)) {
+        continue;
+      }
+      $cache_size += $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
 
-    // XXX this tries to read every file regardless if it's cache entry
-    // XXX reads all entries XXX
-    $content = @file_get_contents($filename);
-    if ($content === FALSE) {
-      continue; // some problem in reading but we don't care
-    }
-    $cache = @unserialize($content);
-    if ($content === FALSE || !is_object($cache)) {
-      continue; // broken file - don't remove it because it may not belong to us
-    }
+      // XXX this tries to read every file regardless if it's cache entry
+      // XXX reads all entries XXX
+      $content = @file_get_contents($pathname);
+      if ($content === FALSE) {
+        continue; // some problem in reading but we don't care
+      }
+      $cache = @unserialize($content);
+      if ($content === FALSE || !is_object($cache)) {
+        continue; // broken file - don't remove it because it may not belong to us
+      }
 
-    if ($cache->expire == CACHE_PERMANENT) {
-      continue;
-    }
+      if ($cache->expire == CACHE_PERMANENT) {
+        continue;
+      }
 
-    $expiry_date = $cache->expire;
-    if ($cache->expire == CACHE_TEMPORARY) {
-      $expiry_date = $cache->created + variable_get('cache_lifetime', 0);
-    }
-    if ($expiry_date < REQUEST_TIME) {
-      @unlink($filename);
-    }
-  } // foreach $filename
-  closedir($dh);
-  chdir($cwd);
+      $expiry_date = $cache->expire;
+      if ($cache->expire == CACHE_TEMPORARY) {
+        $expiry_date = $cache->created + variable_get('cache_lifetime', 0);
+      }
+      if ($expiry_date < REQUEST_TIME) {
+        @unlink($filename);
+      }
+    } // foreach $filename
+    closedir($dh);
+  }
 
   cache_set('filecache_space', array('cache_size' => $cache_size));
 }
