@@ -61,7 +61,7 @@ class DrupalFileCache implements DrupalCacheInterface {
 
     // @todo Support custom prefix
     $this->directory = $filecache_directory;
-    $this->prefix = $this->directory . '/' . $this->get_cache_prefix() . $bin . '-';
+    $this->prefix = $this->directory . '/' . $this->get_cache_prefix() . $bin . ',';
 
     $this->check_filecache_directory();
     $this->truncate_if_needed();
@@ -70,13 +70,13 @@ class DrupalFileCache implements DrupalCacheInterface {
   /**
    * Implement unified cache bin prefix as described in https://www.drupal.org/node/1324812
    * 
-   * By default, conf_path() is used as prefix after replacing '/' with '-', and adding final '-'.
+   * By default, conf_path() is used as prefix after replacing '/' with '_', and adding final ','.
    * 
    * @global type $conf
    * @return string The prefix, or empty string if there is no prefix;
    */
   private function get_cache_prefix() {
-    $prefix = str_replace('/', '-', conf_path()) . '-';
+    $prefix = str_replace('/', '_', conf_path()) . ',';
     global $conf;
     if (array_key_exists('cache_prefix', $conf)) {
       $cache_prefix_conf = $conf['cache_prefix'];
@@ -182,12 +182,12 @@ class DrupalFileCache implements DrupalCacheInterface {
     // encoded ':' and '/' back into ordinary characters since they're used so
     // often. (Especially ':', but '/' is used in cache_menu.)
     // We can't turn them back into their own characters though; both are
-    // considered unsafe in filenames. So turn : -> <space> and / -> ^
-    $safe_cid = str_replace(array('%2F', '%3A'), array('^', ' '), urlencode($cid));
+    // considered unsafe in filenames. So turn ':' -> '@' and '/' -> '='
+    $safe_cid = str_replace(array('%3A', '%2F'), array('@', '='), urlencode($cid));
     if (strlen($safe_cid) > FILECACHE_CID_FILENAME_MAX) {
       $safe_cid =
         substr($safe_cid, 0, FILECACHE_CID_FILENAME_POS_BEFORE_MD5) .
-        '%_' .
+        ',' .
         md5(substr($safe_cid, FILECACHE_CID_FILENAME_POS_BEFORE_MD5));
     }
 
@@ -440,7 +440,7 @@ class DrupalFileCache implements DrupalCacheInterface {
    */
   protected function all($cid_prefix = '') {
     $list = array();
-    $filename_prefix = $this->bin . '-' . $this->encode_cid($cid_prefix);
+    $filename_prefix = $this->bin . ',' . $this->encode_cid($cid_prefix);
     $filename_prefix_len = strlen($filename_prefix);
     if (is_dir($this->directory)) {
       $cwd = getcwd();
