@@ -24,6 +24,10 @@ define('FILECACHE_CID_FILENAME_MAX', 200);
  */
 define('FILECACHE_CID_FILENAME_POS_BEFORE_MD5', FILECACHE_CID_FILENAME_MAX - 34);
 
+/**
+ * Cache bin registry file.
+ */
+define('FILECACHE_CACHE_BIN_REGISTRY', 'filecache-bins');
 
 /**
  * Get base File Cache directory.
@@ -54,47 +58,83 @@ class DrupalFileCache implements DrupalCacheInterface {
   function __construct($bin) {
     $this->bin = $bin;
     $filecache_directory = filecache_directory();
-    $t = get_t();
-
-    // Check for problems with filecache_directory
-    $hint = FALSE;
-    if (empty($filecache_directory)) {
-      $hint = t('Your web server is not Apache and so default filecache_directory cannot be used.');
-    }
-    else {
-      if (!is_dir($filecache_directory)) {
-        if (!file_exists($filecache_directory)) {
-          // Directory does not exist. Try to create it.
-          if (!mkdir($filecache_directory, 0777, TRUE)) {
-            $hint = $t('%dir does not exist and <samp>filecache.inc</samp> was not able to create it probably due to permission problem.', array('%dir' => $filecache_directory));
-          }
-          if (!chmod($filecache_directory, 0777)) {
-            // insist that $filecache_directory must have 777 access mode
-            // or better not exist at all
-            rmdir($filecache_directory);
-            $hint = $t('%dir does not exist, <samp>filecache.inc</samp> successfully created it but chmod 777 failed.', array('%dir' => $filecache_directory));
-          }
-        }
-        else {
-          $hint = $t('%dir is not directory.', array('%dir' => $filecache_directory));
-        }
-      }
-      elseif (!is_writable($filecache_directory)) {
-        $hint = $t('%dir is directory but PHP cannot write to it.', array('%dir' => $filecache_directory));
-      }
-    }
-    if ($hint) {
-?>
-<p><strong><?php print $t('Fatal error: filecache_directory is not configured correctly. Please read %readmetxt.', array('%readmetxt' => dirname(__FILE__) . '/README.txt')) ?></strong></p>
-
-<p><?php print $t('Hint: @hint', array('@hint' => $hint)) ?></p>
-<?php
-      exit();
-    }
 
     // @todo Support custom prefix
     $this->directory = $filecache_directory;
     $this->prefix = $this->directory . '/' . $bin . '-';
+
+    $this->check_filecache_directory();
+    $this->truncate_db_bin();
+  }
+
+  private function check_filecache_directory() {
+    $t = get_t();
+    $hint = FALSE;
+    if (empty($this->directory)) {
+      $hint = t('Your web server is not Apache and so default filecache_directory cannot be used.');
+    }
+    else {
+      if (!is_dir($this->directory)) {
+        if (!file_exists($this->directory)) {
+          // Directory does not exist. Try to create it.
+          if (!mkdir($this->directory, 0777, TRUE)) {
+            $hint = $t('%dir does not exist and <samp>filecache.inc</samp> was not able to create it probably due to permission problem.', array('%dir' => $this->directory));
+          }
+          if (!chmod($this->directory, 0777)) {
+            // insist that $this->directory must have 777 access mode
+            // or better not exist at all
+            rmdir($this->directory);
+            $hint = $t('%dir does not exist, <samp>filecache.inc</samp> successfully created it but chmod 777 failed.', array('%dir' => $this->directory));
+          }
+        }
+        else {
+          $hint = $t('%dir is not directory.', array('%dir' => $this->directory));
+        }
+      }
+      elseif (!is_writable($this->directory)) {
+        $hint = $t('%dir is directory but PHP cannot write to it.', array('%dir' => $this->directory));
+      }
+    }
+    if ($hint) {
+  ?>
+  <p><strong><?php print $t('Fatal error: filecache_directory is not configured correctly. Please read %readmetxt.', array('%readmetxt' => dirname(__FILE__) . '/README.txt')) ?></strong></p>
+
+  <p><?php print $t('Hint: @hint', array('@hint' => $hint)) ?></p>
+  <?php
+      exit();
+    }
+  }
+  
+  private function truncate_db_bin() {
+    $registry_pathname = $this->directory . '/' . FILECACHE_CACHE_BIN_REGISTRY;
+    $registry = @unserialize(@file_get_contents($registry_pathname));
+    if (!isset($registry) || !is_array($registry))  {
+      $registry = array();
+    }
+    $registry_changed = FALSE;
+    $db_cache_clear = FALSE;
+    if (!array_key_exists($this->bin, $registry)) {
+      $registry[$this->bin] = NULL;
+      $registry_changed = TRUE;
+      $db_cache_clear = TRUE;
+    } else {
+      global $conf;
+      foreach ($registry as $filecache_bin => $placeholder) {
+        $cache_class_setting = 'cache_class_' . $filecache_bin;
+        if (array_key_exists($cache_class_setting, $conf) && $conf[$cache_class_setting] != 'DrupalFileCache') {
+          // TODO should also delete all filecache files for this cache bin
+          unset($registry[$filecache_bin]);
+          $registry_changed = TRUE;
+        }
+      }
+    }
+    if ($registry_changed) {
+      file_put_contents($registry_pathname, serialize($registry));
+    }
+    if ($db_cache_clear) {
+      $db_cache = new DrupalDatabaseCache($this->bin);
+      $db_cache->clear('*', TRUE);
+    }
   }
 
   /**
