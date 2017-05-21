@@ -61,12 +61,42 @@ class DrupalFileCache implements DrupalCacheInterface {
 
     // @todo Support custom prefix
     $this->directory = $filecache_directory;
-    $this->prefix = $this->directory . '/' . $bin . '-';
+    $this->prefix = $this->directory . '/' . $this->get_cache_prefix() . $bin . '-';
 
     $this->check_filecache_directory();
     $this->truncate_if_needed();
   }
 
+  /**
+   * Implement unified cache bin prefix as described in https://www.drupal.org/node/1324812
+   * 
+   * By default, conf_path() is used as prefix after replacing '/' with '-'.
+   * 
+   * @global type $conf
+   * @return string The prefix with '-' appended, or empty string if there is no prefix;
+   */
+  private function get_cache_prefix() {
+    $prefix = str_replace('/', '-', conf_path());
+    global $conf;
+    if (array_key_exists('cache_prefix', $conf)) {
+      $cache_prefix_conf = $conf['cache_prefix'];
+      if ($cache_prefix_conf === FALSE || is_string($cache_prefix_conf)) {
+        $prefix = $cache_prefix_conf;
+      } elseif (is_array($cache_prefix_conf)) {
+        if (array_key_exists($this->bin, $cache_prefix_conf)) {
+          $prefix = $cache_prefix_conf[$this->bin];
+        } else if (array_key_exists('default', $cache_prefix_conf)) {
+          $prefix = $cache_prefix_conf['default'];
+        }
+      }
+    }
+    if (is_string($prefix)) {
+      return $prefix . '-';
+    } else {
+      return "";
+    }
+  }
+  
   private function check_filecache_directory() {
     $t = get_t();
     $hint = FALSE;
