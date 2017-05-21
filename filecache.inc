@@ -64,7 +64,7 @@ class DrupalFileCache implements DrupalCacheInterface {
     $this->prefix = $this->directory . '/' . $bin . '-';
 
     $this->check_filecache_directory();
-    $this->truncate_db_bin();
+    $this->truncate_if_needed();
   }
 
   private function check_filecache_directory() {
@@ -105,18 +105,18 @@ class DrupalFileCache implements DrupalCacheInterface {
     }
   }
   
-  private function truncate_db_bin() {
+  private function truncate_if_needed() {
     $registry_pathname = $this->directory . '/' . FILECACHE_CACHE_BIN_REGISTRY;
     $registry = @unserialize(@file_get_contents($registry_pathname));
     if (!isset($registry) || !is_array($registry))  {
       $registry = array();
     }
     $registry_changed = FALSE;
-    $db_cache_clear = FALSE;
+    $do_truncate = FALSE;
     if (!array_key_exists($this->bin, $registry)) {
       $registry[$this->bin] = NULL;
       $registry_changed = TRUE;
-      $db_cache_clear = TRUE;
+      $do_truncate = TRUE;
     } else {
       global $conf;
       foreach ($registry as $filecache_bin => $placeholder) {
@@ -131,9 +131,11 @@ class DrupalFileCache implements DrupalCacheInterface {
     if ($registry_changed) {
       file_put_contents($registry_pathname, serialize($registry));
     }
-    if ($db_cache_clear) {
+    if ($do_truncate) {
       $db_cache = new DrupalDatabaseCache($this->bin);
       $db_cache->clear('*', TRUE);
+
+      $this->delete_wildcard('');
     }
   }
 

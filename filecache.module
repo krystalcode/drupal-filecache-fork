@@ -17,6 +17,24 @@ function filecache_cron() {
     return;
   }
 
+  // Check if filecache is enabled in settings.php
+  $filecache_enabled = FALSE;
+  global $conf;
+  foreach ($conf as $setting => $value) {
+    if ($setting == 'cache_default_class' || substr($setting, 0, strlen('cache_class_')) === 'cache_class_') {
+      if ($value === 'DrupalFileCache') {
+        $filecache_enabled = TRUE;
+        break;
+      }
+    }
+  }
+
+  // If filecache is disabled, be sure to remove filecache bin registry
+  if (!$filecache_enabled) {
+    @unlink($filecache_directory . '/' . FILECACHE_CACHE_BIN_REGISTRY);
+    return;
+  }
+  
   // XXX just adapted from DrupalFileCache::delete_expired()
 
   $cache_size = 0;
