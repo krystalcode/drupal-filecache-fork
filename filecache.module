@@ -31,7 +31,7 @@ function filecache_cron() {
 
   // If filecache is disabled, be sure to remove filecache bin registry
   if (!$filecache_enabled) {
-    @unlink($filecache_directory . '/' . FILECACHE_CACHE_BIN_REGISTRY);
+    @unlink(filecache_registry_pathname());
     return;
   }
   

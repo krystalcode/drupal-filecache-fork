@@ -78,7 +78,7 @@ exist and there should be no problem with permissions since it's in
 
 $conf['cache_backends'] = array('sites/all/modules/filecache/filecache.inc');
 $conf['cache_default_class'] = 'DrupalFileCache';
-$conf['filecache_directory'] = '/tmp/filecache-' . substr(conf_path(), 6);
+$conf['filecache_directory'] = '/tmp/drupal/filecache';
 
 * Advanced configuration
 
@@ -86,18 +86,27 @@ $conf['filecache_directory'] = '/tmp/filecache-' . substr(conf_path(), 6);
 
 XXX Just examples from http://cgit.drupalcode.org/redis/tree/README.md for now.
 
-$settings['cache_prefix'] = 'mysite_';
+$conf['cache_prefix'] = 'mysite_';
 
-$settings['cache_prefix']['default'] = 'mysite_';
+$conf['cache_prefix']['default'] = 'mysite_';
 
 // Default behavior for all bins, prefix is 'mysite_'.
-$settings['cache_prefix']['default'] = 'mysite_';
+$conf['cache_prefix']['default'] = 'mysite_';
 // Set no prefix explicitely for 'cache' and 'cache_bootstrap' bins.
-$settings['cache_prefix']['cache'] = FALSE;
-$settings['cache_prefix']['cache_bootstrap'] = FALSE;
+$conf['cache_prefix']['cache'] = FALSE;
+$conf['cache_prefix']['cache_bootstrap'] = FALSE;
 // Set another prefix for 'cache_menu' bin.
-$settings['cache_prefix']['cache_menu'] = 'menumysite_';
+$conf['cache_prefix']['cache_menu'] = 'menumysite_';
 
+$conf['filecache_directory']['default'] = '/tmp/drupal/filecache';
+$conf['filecache_directory']['cache'] = '/dev/shm/drupal/filecache';
+$conf['filecache_directory']['cache_bootstrap'] = '/dev/shm/drupal/filecache';
+
+$conf['filecache_hexlevel']['cache_page'] = 2;
+
+$conf['filecache_hexlevel']['default'] = 2;
+$conf['filecache_hexlevel']['cache'] = 0;
+$conf['filecache_hexlevel']['cache_bootstrap'] = 0;
 
 * Disabling filecache
 

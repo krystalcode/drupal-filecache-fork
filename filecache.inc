@@ -27,14 +27,25 @@ define('FILECACHE_CID_FILENAME_POS_BEFORE_MD5', FILECACHE_CID_FILENAME_MAX - 34)
 /**
  * Cache bin registry file.
  */
-define('FILECACHE_CACHE_BIN_REGISTRY', 'filecache-bins');
+define('FILECACHE_CACHE_BIN_REGISTRY', 'filecache_bins');
+
+define('FILECACHE_DIRECTORY_MODE', 0700);
+
+define('FILECACHE_FILE_MODE', 0600);
 
 /**
  * Get base File Cache directory.
  */
-function filecache_directory() {
+function filecache_directory($bin = FALSE) {
   $filecache_directory = variable_get('filecache_directory', FALSE);
-  if ($filecache_directory === FALSE) {
+  if (is_array($filecache_directory)) {
+    if (is_string($bin) && array_key_exists($bin, $filecache_directory)) {
+      $filecache_directory = $filecache_directory[$bin];
+    } else if (array_key_exists('default', $filecache_directory)) {
+      $filecache_directory = $filecache_directory['default'];
+    }
+  }
+  if (!is_string($filecache_directory)) {
     // Default directory for Apache only but if it already exists, use it
     // http://drupal.org/node/1337084 (Drush support)
     $filecache_directory = DRUPAL_ROOT . '/' . conf_path() . '/files/.ht.filecache';
@@ -47,44 +58,24 @@ function filecache_directory() {
   return $filecache_directory;
 }
 
-class DrupalFileCache implements DrupalCacheInterface {
-
-  /**
-   * Construct DrupalFileCache for specified cache bin.
-   *
-   * @param $bin
-   *   Cache bin name.
-   */
-  function __construct($bin) {
-    $this->bin = $bin;
-    $filecache_directory = filecache_directory();
-
-    // @todo Support custom prefix
-    $this->directory = $filecache_directory;
-    $this->prefix = $this->directory . '/' . $this->get_cache_prefix() . $bin . ',';
-
-    $this->check_filecache_directory();
-    $this->truncate_if_needed();
-  }
-
   /**
    * Implement unified cache bin prefix as described in https://www.drupal.org/node/1324812
    * 
-   * By default, conf_path() is used as prefix after replacing '/' with '_', and adding final ','.
+   * By default, conf_path() is used as prefix after replacing '/' with '_', and adding final '_'.
    * 
    * @global type $conf
    * @return string The prefix, or empty string if there is no prefix;
    */
-  private function get_cache_prefix() {
-    $prefix = str_replace('/', '_', conf_path()) . ',';
+  function get_cache_prefix($bin = FALSE) {
+    $prefix = str_replace('/', '_', conf_path()) . '_';
     global $conf;
     if (array_key_exists('cache_prefix', $conf)) {
       $cache_prefix_conf = $conf['cache_prefix'];
       if ($cache_prefix_conf === FALSE || is_string($cache_prefix_conf)) {
         $prefix = $cache_prefix_conf;
       } elseif (is_array($cache_prefix_conf)) {
-        if (array_key_exists($this->bin, $cache_prefix_conf)) {
-          $prefix = $cache_prefix_conf[$this->bin];
+        if (is_string($bin) && array_key_exists($bin, $cache_prefix_conf)) {
+          $prefix = $cache_prefix_conf[$bin];
         } else if (array_key_exists('default', $cache_prefix_conf)) {
           $prefix = $cache_prefix_conf['default'];
         }
@@ -97,6 +88,26 @@ class DrupalFileCache implements DrupalCacheInterface {
     }
   }
   
+function filecache_registry_pathname() {
+  return filecache_directory() . '/' . get_cache_prefix() . FILECACHE_CACHE_BIN_REGISTRY;
+}
+
+class DrupalFileCache implements DrupalCacheInterface {
+
+  /**
+   * Construct DrupalFileCache for specified cache bin.
+   *
+   * @param $bin
+   *   Cache bin name.
+   */
+  function __construct($bin) {
+    $this->bin = $bin;
+    $this->directory = filecache_directory($bin) . '/' . get_cache_prefix($bin) . $bin;
+
+    $this->check_filecache_directory();
+    $this->truncate_if_needed();
+  }
+
   private function check_filecache_directory() {
     $t = get_t();
     $hint = FALSE;
@@ -107,14 +118,16 @@ class DrupalFileCache implements DrupalCacheInterface {
       if (!is_dir($this->directory)) {
         if (!file_exists($this->directory)) {
           // Directory does not exist. Try to create it.
-          if (!mkdir($this->directory, 0777, TRUE)) {
-            $hint = $t('%dir does not exist and <samp>filecache.inc</samp> was not able to create it probably due to permission problem.', array('%dir' => $this->directory));
+          if (!mkdir($this->directory, FILECACHE_DIRECTORY_MODE, TRUE)) {
+            $hint = $t('%dir does not exist and <samp>filecache.inc</samp> was not able to create it probably due to permission problem.',
+                array('%dir' => $this->directory));
           }
-          if (!chmod($this->directory, 0777)) {
-            // insist that $this->directory must have 777 access mode
+          if (!chmod($this->directory, FILECACHE_DIRECTORY_MODE)) {
+            // insist that $this->directory must have FILECACHE_DIRECTORY_MODE access mode
             // or better not exist at all
             rmdir($this->directory);
-            $hint = $t('%dir does not exist, <samp>filecache.inc</samp> successfully created it but chmod 777 failed.', array('%dir' => $this->directory));
+            $hint = $t('%dir does not exist, <samp>filecache.inc</samp> successfully created it but chmod %mode failed.',
+                array('%dir' => $this->directory, '%mode' => FILECACHE_DIRECTORY_MODE));
           }
         }
         else {
@@ -136,7 +149,7 @@ class DrupalFileCache implements DrupalCacheInterface {
   }
   
   private function truncate_if_needed() {
-    $registry_pathname = $this->directory . '/' . FILECACHE_CACHE_BIN_REGISTRY;
+    $registry_pathname = filecache_registry_pathname();
     $registry = @unserialize(@file_get_contents($registry_pathname));
     if (!isset($registry) || !is_array($registry))  {
       $registry = array();
@@ -159,7 +172,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       }
     }
     if ($registry_changed) {
-      file_put_contents($registry_pathname, serialize($registry));
+      @file_put_contents($registry_pathname, serialize($registry));
     }
     if ($do_truncate) {
       $db_cache = new DrupalDatabaseCache($this->bin);
@@ -209,7 +222,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       return FALSE;
     }
 
-    $filename = $this->prefix . $this->encode_cid($cid);
+    $filename = $this->directory . '/' . $this->encode_cid($cid);
 
     // XXX should be in getMultiple() and get() to call getMultiple()
     $this->delete_flushed();
@@ -313,7 +326,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       return;
     }
 
-    $filename = $this->prefix . $this->encode_cid($cid);
+    $filename = $this->directory . '/' . $this->encode_cid($cid);
 
     // Open file for that entry, handling errors that may arise
     $fh = @fopen($filename, 'r+b');
@@ -321,7 +334,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       // If file doesn't exist, create it with a+w permissions
       $fh = fopen($filename, 'c+b');
       if ($fh !== FALSE) {
-        if (!chmod($filename, 0666)) {
+        if (!chmod($filename, FILECACHE_FILE_MODE)) {
           watchdog('filecache', 'Cannot chmod %filename',
                    array('%filename' => $filename), WATCHDOG_CRITICAL);
           return;
@@ -428,7 +441,7 @@ class DrupalFileCache implements DrupalCacheInterface {
    *   Cache ID.
    */
   protected function delete_one($cid) {
-    $filename = $this->prefix . $this->encode_cid($cid);
+    $filename = $this->directory . '/' . $this->encode_cid($cid);
     @unlink($filename);
   }
 
@@ -440,7 +453,7 @@ class DrupalFileCache implements DrupalCacheInterface {
    */
   protected function all($cid_prefix = '') {
     $list = array();
-    $filename_prefix = $this->bin . ',' . $this->encode_cid($cid_prefix);
+    $filename_prefix = $this->encode_cid($cid_prefix);
     $filename_prefix_len = strlen($filename_prefix);
     if (is_dir($this->directory)) {
       $cwd = getcwd();
