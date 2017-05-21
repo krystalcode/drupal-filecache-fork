@@ -80,6 +80,18 @@ $conf['cache_backends'] = array('sites/all/modules/filecache/filecache.inc');
 $conf['cache_default_class'] = 'DrupalFileCache';
 $conf['filecache_directory'] = '/tmp/filecache-' . substr(conf_path(), 6);
 
+* Disabling filecache
+
+You may comment the $conf settings for DrupalFileCache to disable filecache.
+If you re-enable it, be sure that cronjob has run at least once in the meanwhile.
+
+Technically, File Cache keeps in filecache-bins file the cache bins that are
+handled by File Cache. When new cache bins are added to filecache-bins,
+the corresponding database cache database is truncated so that disabling
+this cache bin forces re-populating of the database cache. When cache bins are
+disabled, the filecache module cron hook detects this case and clears files
+from the filecache cache bin.
+
 * NOT IMPLEMENTED YET: filecache_fast_pagecache
 
  #$conf['filecache_fast_pagecache'] = TRUE;
