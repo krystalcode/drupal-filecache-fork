@@ -1,5 +1,7 @@
 <?php // -*- indent-tabs-mode:nil -*-
 
+module_load_include('inc', 'filecache', 'filecache'); // load filecache.inc
+
 /**
  * Implements hook_cron().
  *
