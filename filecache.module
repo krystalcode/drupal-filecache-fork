@@ -50,7 +50,8 @@ function filecache_cron() {
       if ($stat === FALSE || is_dir($pathname)) {
         continue;
       }
-      $cache_size += $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
+      $file_size = $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
+      $cache_size += $file_size;
 
       // XXX this tries to read every file regardless if it's cache entry
       // XXX reads all entries XXX
@@ -73,6 +74,7 @@ function filecache_cron() {
       }
       if ($expiry_date < REQUEST_TIME) {
         @unlink($filename);
+        $cache_size -= $file_size;
       }
     } // foreach $filename
     closedir($dh);
