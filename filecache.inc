@@ -507,7 +507,7 @@ class DrupalFileCache implements DrupalCacheInterface {
         $expiry_date = $cache->created + variable_get('cache_lifetime', 0);
       }
       if ($expiry_date < $cache_flush) {
-        @unlink($filename);
+        @unlink($this->directory . '/' . $filename);
       }
     } // foreach $filename
   }
