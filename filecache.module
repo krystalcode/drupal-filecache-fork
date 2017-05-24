@@ -110,6 +110,21 @@ function filecache_requirements($phase) {
       $t('Cache files use unknown disk space. Run cron to update.');
   }
 
+  if ($filecache_directory == filecache_default_directory()) {
+    $url = substr($filecache_directory, strlen(DRUPAL_ROOT)) . '/' . FILECACHE_CACHE_BIN_REGISTRY;
+    $requirements['severity'] = REQUIREMENT_WARNING;
+    $requirements['description'] .= $t(
+        '<br>You use default directory location %default_dir. ' .
+        'Make sure your webserver denies access to files and directories starting with ".ht" like in the following link: ' .
+        '<a href="!link">link</a>. If you deny access to directories starting with ".ht" and you want to remove this message, ' .
+        'add the following line to your <code>settings.php</code> and then remove the <code>!quickstart</code> directory:<br>' .
+        '<code>$conf[\'filecache_directory\'] = \'!new_dir\';</code>',
+        array('%default_dir' => $filecache_directory,
+            '!link' => $url,
+            '!quickstart' => FILECACHE_QUICKSTART_DIRECTORY,
+            '!new_dir' => filecache_default_directory(FALSE)));
+  }
+
   return array('filecache' => $requirements);
 }
 

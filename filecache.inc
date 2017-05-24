@@ -29,10 +29,19 @@ define('FILECACHE_CID_FILENAME_POS_BEFORE_MD5', FILECACHE_CID_FILENAME_MAX - 34)
  */
 define('FILECACHE_CACHE_BIN_REGISTRY', 'filecache_bins');
 
+define('FILECACHE_QUICKSTART_DIRECTORY', '.ht.filecache.quickstart');
+
 define('FILECACHE_DIRECTORY_MODE', 0700);
 
 define('FILECACHE_FILE_MODE', 0600);
 
+function filecache_default_directory($quickstart = TRUE) {
+  $dir = FILECACHE_QUICKSTART_DIRECTORY;
+  if (!$quickstart) {
+    $dir = str_replace('.quickstart', '', $dir);
+  }
+  return DRUPAL_ROOT . '/' . conf_path() . '/files/' . $dir;
+}
 /**
  * Get base File Cache directory.
  */
@@ -46,14 +55,7 @@ function filecache_directory($bin = FALSE) {
     }
   }
   if (!is_string($filecache_directory)) {
-    // Default directory for Apache only but if it already exists, use it
-    // http://drupal.org/node/1337084 (Drush support)
-    $filecache_directory = DRUPAL_ROOT . '/' . conf_path() . '/files/.ht.filecache';
-    if (strpos($_SERVER['SERVER_SOFTWARE'], 'Apache') !== 0 &&
-        !is_dir($filecache_directory)) {
-        // Neither Apache, nor default directory exists
-        $filecache_directory = FALSE;
-    }
+    $filecache_directory = filecache_default_directory();
   }
   return $filecache_directory;
 }
@@ -140,7 +142,7 @@ class DrupalFileCache implements DrupalCacheInterface {
       watchdog('filecache', $critical_message, array(), WATCHDOG_CRITICAL);
       return FALSE;
     }
-    return FALSE;
+    return TRUE;
   }
   
   private function truncate_if_needed() {
