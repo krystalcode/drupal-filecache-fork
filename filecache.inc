@@ -51,11 +51,15 @@ function filecache_directory($bin = FALSE) {
     $filecache_directory = DRUPAL_ROOT . '/' . conf_path() . '/files/.ht.filecache';
     if (strpos($_SERVER['SERVER_SOFTWARE'], 'Apache') !== 0 &&
         !is_dir($filecache_directory)) {
-      // Neither Apache, nor default directory exists
-      $filecache_directory = FALSE;
+        // Neither Apache, nor default directory exists
+        $filecache_directory = FALSE;
     }
   }
   return $filecache_directory;
+}
+
+function filecache_is_readdeleteonly() {
+  return substr(php_sapi_name(), 0, 3) == "cli" || (extension_loaded('posix') && posix_getuid() == 0);
 }
 
 /**
@@ -104,48 +108,39 @@ class DrupalFileCache implements DrupalCacheInterface {
     $this->bin = $bin;
     $this->directory = filecache_directory($bin) . '/' . get_cache_prefix($bin) . $bin;
 
-    $this->check_filecache_directory();
+    $this->ok = $this->check_filecache_directory();
     $this->truncate_if_needed();
   }
 
   private function check_filecache_directory() {
     $t = get_t();
-    $hint = FALSE;
-    if (empty($this->directory)) {
-      $hint = t('Your web server is not Apache and so default filecache_directory cannot be used.');
-    }
-    else {
-      if (!is_dir($this->directory)) {
-        if (!file_exists($this->directory)) {
-          // Directory does not exist. Try to create it.
-          if (!mkdir($this->directory, FILECACHE_DIRECTORY_MODE, TRUE)) {
-            $hint = $t('%dir does not exist and <samp>filecache.inc</samp> was not able to create it probably due to permission problem.',
-                array('%dir' => $this->directory));
-          }
-          if (!chmod($this->directory, FILECACHE_DIRECTORY_MODE)) {
-            // insist that $this->directory must have FILECACHE_DIRECTORY_MODE access mode
-            // or better not exist at all
-            rmdir($this->directory);
-            $hint = $t('%dir does not exist, <samp>filecache.inc</samp> successfully created it but chmod %mode failed.',
-                array('%dir' => $this->directory, '%mode' => '0' . decoct(FILECACHE_DIRECTORY_MODE)));
-          }
+    $critical_message = FALSE;
+    if (!is_dir($this->directory)) {
+      if (!file_exists($this->directory)) {
+        if (filecache_is_readdeleteonly()) {
+          watchdog('filecache', 'Need to create directory %dir but not running in webserver and permissions of created directory would become wrong',
+              array('%dir' => $this->directory), WATCHDOG_NOTICE);
+          return true;
         }
-        else {
-          $hint = $t('%dir is not directory.', array('%dir' => $this->directory));
+        // Directory does not exist. Try to create it.
+        if (!mkdir($this->directory, FILECACHE_DIRECTORY_MODE, TRUE)) {
+          $critical_message = $t('%dir does not exist and cannot be created. Please check directory permissions.',
+              array('%dir' => $this->directory));
         }
       }
-      elseif (!is_writable($this->directory)) {
-        $hint = $t('%dir is directory but PHP cannot write to it.', array('%dir' => $this->directory));
+      else {
+        $critical_message = $t('%dir is not a directory.', array('%dir' => $this->directory));
       }
     }
-    if ($hint) {
-  ?>
-  <p><strong><?php print $t('Fatal error: filecache_directory is not configured correctly. Please read %readmetxt.', array('%readmetxt' => dirname(__FILE__) . '/README.txt')) ?></strong></p>
+    elseif (!is_writable($this->directory)) {
+      $critical_message = $t('PHP cannot write to directory %dir.', array('%dir' => $this->directory));
+    }
 
-  <p><?php print $t('Hint: @hint', array('@hint' => $hint)) ?></p>
-  <?php
-      exit();
+    if ($critical_message) {
+      watchdog('filecache', $critical_message, array(), WATCHDOG_CRITICAL);
+      return false;
     }
+    return true;
   }
   
   private function truncate_if_needed() {
@@ -161,18 +156,21 @@ class DrupalFileCache implements DrupalCacheInterface {
       $registry_changed = TRUE;
       $do_truncate = TRUE;
     } else {
+      // Check all other cache bins in registry
       global $conf;
       foreach ($registry as $filecache_bin => $placeholder) {
         $cache_class_setting = 'cache_class_' . $filecache_bin;
         if (array_key_exists($cache_class_setting, $conf) && $conf[$cache_class_setting] != 'DrupalFileCache') {
-          // TODO should also delete all filecache files for this cache bin
+          // The cache bin is configured for specified cache class but it is not our cache class.
           unset($registry[$filecache_bin]);
           $registry_changed = TRUE;
         }
       }
     }
     if ($registry_changed) {
-      @file_put_contents($registry_pathname, serialize($registry));
+      if ($this->ok && !filecache_is_readdeleteonly()) {
+        file_put_contents($registry_pathname, serialize($registry));
+      }
     }
     if ($do_truncate) {
       $db_cache = new DrupalDatabaseCache($this->bin);
@@ -218,7 +216,7 @@ class DrupalFileCache implements DrupalCacheInterface {
    *   The cache or FALSE on failure.
    */
   function get($cid) {
-    if (!is_string($cid)) {
+    if (!$this->ok || !is_string($cid)) {
       return FALSE;
     }
 
@@ -322,10 +320,13 @@ class DrupalFileCache implements DrupalCacheInterface {
    *     the given time, after which it behaves like CACHE_TEMPORARY.
    */
   function set($cid, $data, $expire = CACHE_PERMANENT) {
-    if (!is_string($cid)) {
+    if (!$this->ok || !is_string($cid)) {
       return;
     }
-
+    if (filecache_is_readdeleteonly()) {
+      return;
+    }
+    
     $filename = $this->directory . '/' . $this->encode_cid($cid);
 
     // Open file for that entry, handling errors that may arise
@@ -335,15 +336,13 @@ class DrupalFileCache implements DrupalCacheInterface {
       $fh = fopen($filename, 'c+b');
       if ($fh !== FALSE) {
         if (!chmod($filename, FILECACHE_FILE_MODE)) {
-          watchdog('filecache', 'Cannot chmod %filename',
-                   array('%filename' => $filename), WATCHDOG_CRITICAL);
+          watchdog('filecache', 'Cannot chmod %filename', array('%filename' => $filename), WATCHDOG_CRITICAL);
           return;
         }
       }
       else {
         // most likely permission error - report it as critical error
-        watchdog('filecache', 'Cannot open %filename',
-                 array('%filename' => $filename), WATCHDOG_CRITICAL);
+        watchdog('filecache', 'Cannot open %filename', array('%filename' => $filename), WATCHDOG_CRITICAL);
         return;
       }
     }
@@ -387,6 +386,10 @@ class DrupalFileCache implements DrupalCacheInterface {
   function clear($cid = NULL, $wildcard = FALSE) {
     global $user;
 
+    if (!$this->ok) {
+      return;
+    }
+    
     // parts are shamelessy copied from includes/cache.inc
 
     if (empty($cid)) {
@@ -485,13 +488,24 @@ class DrupalFileCache implements DrupalCacheInterface {
   /**
    * Delete expired cache entries.
    */
-  protected function delete_expired($cache_flush = NULL) {
+  function delete_expired($cache_flush = NULL) {
     if (!isset($cache_flush)) {
       $cache_flush = REQUEST_TIME;
     }
+
+    $cache_size = 0;
     foreach ($this->all() as $filename) {
-      // XXX reads all entries XXX
-      $content = @file_get_contents($this->directory . '/' . $filename);
+      $pathname = $this->directory . '/' . $filename;
+
+      // gather statistics
+      $stat = @stat($pathname);
+      if ($stat === FALSE || is_dir($pathname)) {
+        continue;
+      }
+      $file_size = $stat['blocks'] >= 0 ? $stat['blocks']*512 : $stat['size'];
+      $cache_size += $file_size;
+
+      $content = @file_get_contents($pathname);
       if ($content === FALSE) {
         continue;
       }
@@ -507,10 +521,13 @@ class DrupalFileCache implements DrupalCacheInterface {
         $expiry_date = $cache->created + variable_get('cache_lifetime', 0);
       }
       if ($expiry_date < $cache_flush) {
-        @unlink($this->directory . '/' . $filename);
+        @unlink($pathname);
+        $cache_size -= $file_size;
       }
     } // foreach $filename
-  }
+
+    return $cache_size;
+}
 
   /**
    * Delete flushed cache entries.
@@ -544,6 +561,9 @@ class DrupalFileCache implements DrupalCacheInterface {
    *   TRUE if the cache bin specified is empty.
    */
   function isEmpty() {
+    if (!$this->ok) {
+      return FALSE;
+    }
     return count($this->all()) === 0;
   }
 
