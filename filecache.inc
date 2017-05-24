@@ -127,7 +127,7 @@ class DrupalFileCache implements DrupalCacheInterface {
             // or better not exist at all
             rmdir($this->directory);
             $hint = $t('%dir does not exist, <samp>filecache.inc</samp> successfully created it but chmod %mode failed.',
-                array('%dir' => $this->directory, '%mode' => FILECACHE_DIRECTORY_MODE));
+                array('%dir' => $this->directory, '%mode' => '0' . decoct(FILECACHE_DIRECTORY_MODE)));
           }
         }
         else {
