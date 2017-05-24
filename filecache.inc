@@ -320,14 +320,17 @@ class DrupalFileCache implements DrupalCacheInterface {
    *     the given time, after which it behaves like CACHE_TEMPORARY.
    */
   function set($cid, $data, $expire = CACHE_PERMANENT) {
-    if (!$this->ok || !is_string($cid)) {
+    if (!is_string($cid)) {
       return;
     }
-    if (filecache_is_readdeleteonly()) {
-      return;
-    }
-    
+
     $filename = $this->directory . '/' . $this->encode_cid($cid);
+
+    if (!$this->ok || filecache_is_readdeleteonly()) {
+      // Any cache set while the bin is not OK tries to invalidate the cache record.
+      @unlink($filename);
+      return;
+    }
 
     // Open file for that entry, handling errors that may arise
     $fh = @fopen($filename, 'r+b');
