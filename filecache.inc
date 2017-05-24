@@ -120,7 +120,7 @@ class DrupalFileCache implements DrupalCacheInterface {
         if (filecache_is_readdeleteonly()) {
           watchdog('filecache', 'Need to create directory %dir but not running in webserver and permissions of created directory would become wrong',
               array('%dir' => $this->directory), WATCHDOG_NOTICE);
-          return true;
+          return FALSE;
         }
         // Directory does not exist. Try to create it.
         if (!mkdir($this->directory, FILECACHE_DIRECTORY_MODE, TRUE)) {
@@ -138,9 +138,9 @@ class DrupalFileCache implements DrupalCacheInterface {
 
     if ($critical_message) {
       watchdog('filecache', $critical_message, array(), WATCHDOG_CRITICAL);
-      return false;
+      return FALSE;
     }
-    return true;
+    return FALSE;
   }
   
   private function truncate_if_needed() {
