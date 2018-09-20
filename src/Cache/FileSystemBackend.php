@@ -248,8 +248,8 @@ class FileSystemBackend implements CacheBackendInterface {
    *   The passed in cache ID.
    *
    * @return string
-   *   An cache ID consisting of alphanumeric characters, hypens and underscores
-   *   with a maximum length of 255 characters.
+   *   An cache ID consisting of alphanumeric characters, hyphens and
+   *   underscores with a maximum length of 255 characters.
    */
   protected function normalizeCid($cid) {
     // Nothing to do if the ID is already valid.
