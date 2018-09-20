@@ -49,12 +49,12 @@ CACHE BINS
 ----------
 
 Drupal allows to specify a default cache backend, which will be used for all
-cache bins (unless they are overridden). If you want to use filesystem based
+cache bins (unless they are overridden). If you want to use file system based
 caching by default add the following line to `settings.php` or
 `settings.local.php`:
 
 ```
-$settings['cache']['default'] = 'cache.backend.filesystem';
+$settings['cache']['default'] = 'cache.backend.file_system';
 ```
 
 You can also override specific cache bins. If for example you want to put the
@@ -62,8 +62,8 @@ You can also override specific cache bins. If for example you want to put the
 other bins, you can add the following lines:
 
 ```
-$settings['cache']['bins']['entity'] = 'cache.backend.filesystem';
-$settings['cache']['bins']['page'] = 'cache.backend.filesystem';
+$settings['cache']['bins']['entity'] = 'cache.backend.file_system';
+$settings['cache']['bins']['page'] = 'cache.backend.file_system';
 ```
 
 For more detailed information, please refer to the
@@ -97,7 +97,7 @@ $settings['filecache_paths']['bins']['entity'] = 'private://filecache/entity';
 ```
 
 To increase performance it is possible to store the cache files on a RAM drive
-by using `tmpfs` or similar filesystems. Since the cache directories are
+by using `tmpfs` or similar file systems. Since the cache directories are
 automatically created by File Cache, it is usually no problem that these cache
 files disappear when the machine is restarted.
 Note that some Drupal sites may generate a lot of cache data and a RAM drive

@@ -9,16 +9,16 @@ use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Site\Settings;
 
 /**
- * Factory for creating FilesystemBackend cache backends.
+ * Factory for creating FileSystemBackend cache backends.
  */
-class FilesystemBackendFactory implements CacheFactoryInterface {
+class FileSystemBackendFactory implements CacheFactoryInterface {
 
   /**
-   * The service for interacting with the filesystem.
+   * The service for interacting with the file system.
    *
    * @var \Drupal\Core\File\FileSystemInterface
    */
-  protected $filesystem;
+  protected $fileSystem;
 
   /**
    * The environment specific settings.
@@ -42,10 +42,10 @@ class FilesystemBackendFactory implements CacheFactoryInterface {
   protected $checksumProvider;
 
   /**
-   * Constructs a FilesystemBackendFactory object.
+   * Constructs a FileSystemBackendFactory object.
    *
-   * @param \Drupal\Core\File\FileSystemInterface $filesystem
-   *   The service for interacting with the filesystem.
+   * @param \Drupal\Core\File\FileSystemInterface $fileSystem
+   *   The service for interacting with the file system.
    * @param \Drupal\Core\Site\Settings $settings
    *   The environment specific settings.
    * @param \Drupal\Component\Datetime\TimeInterface $time
@@ -53,20 +53,20 @@ class FilesystemBackendFactory implements CacheFactoryInterface {
    * @param \Drupal\Core\Cache\CacheTagsChecksumInterface $checksumProvider
    *   The cache tags checksum provider.
    */
-  public function __construct(FileSystemInterface $filesystem, Settings $settings, TimeInterface $time, CacheTagsChecksumInterface $checksumProvider) {
-    $this->filesystem = $filesystem;
+  public function __construct(FileSystemInterface $fileSystem, Settings $settings, TimeInterface $time, CacheTagsChecksumInterface $checksumProvider) {
+    $this->fileSystem = $fileSystem;
     $this->settings = $settings;
     $this->time = $time;
     $this->checksumProvider = $checksumProvider;
   }
 
   /**
-   * Returns the FilesystemBackend for the specified cache bin.
+   * Returns the FileSystemBackend for the specified cache bin.
    *
    * @param string $bin
    *   The cache bin for which the object is created.
    *
-   * @return \Drupal\filecache\Cache\FilesystemBackend
+   * @return \Drupal\filecache\Cache\FileSystemBackend
    *   The cache backend object for the specified cache bin.
    *
    * @throws \Exception
@@ -75,7 +75,7 @@ class FilesystemBackendFactory implements CacheFactoryInterface {
    */
   public function get($bin) {
     $path = $this->getPathForBin($bin);
-    return new FilesystemBackend($this->filesystem, $this->time, $this->checksumProvider, $path);
+    return new FileSystemBackend($this->fileSystem, $this->time, $this->checksumProvider, $path);
   }
 
   /**
@@ -102,7 +102,7 @@ class FilesystemBackendFactory implements CacheFactoryInterface {
       $path = rtrim($path_settings['default'], '/') . '/' . $bin . '/';
     }
     else {
-      throw new \Exception('No path has been configured for the filesystem cache backend.');
+      throw new \Exception('No path has been configured for the file system cache backend.');
     }
     return $path;
   }

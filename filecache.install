@@ -7,7 +7,7 @@
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheBackendInterface;
-use Drupal\filecache\Cache\FilesystemBackend;
+use Drupal\filecache\Cache\FileSystemBackend;
 
 /**
  * Implements hook_requirements().
@@ -24,7 +24,7 @@ function filecache_requirements($phase) {
   // Check if any cache bins are using the file system cache backend.
   $bins = Cache::getBins();
   $bins = array_filter(Cache::getBins(), function (CacheBackendInterface $backend) {
-    return $backend instanceof FilesystemBackend;
+    return $backend instanceof FileSystemBackend;
   });
   if (empty($bins)) {
     $requirements['filecache_missing_bins'] = [

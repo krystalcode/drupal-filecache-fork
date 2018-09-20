@@ -11,16 +11,16 @@ use Drupal\Core\Cache\CacheTagsChecksumInterface;
 use Drupal\Core\File\FileSystemInterface;
 
 /**
- * A cache backend that stores cache items as files on the filesystem.
+ * A cache backend that stores cache items as files on the file system.
  */
-class FilesystemBackend implements CacheBackendInterface {
+class FileSystemBackend implements CacheBackendInterface {
 
   /**
-   * The service for interacting with the filesystem.
+   * The service for interacting with the file system.
    *
    * @var \Drupal\Core\File\FileSystemInterface
    */
-  protected $filesystem;
+  protected $fileSystem;
 
   /**
    * The time service.
@@ -46,8 +46,8 @@ class FilesystemBackend implements CacheBackendInterface {
   /**
    * Constructs a FileBackend cache backend.
    *
-   * @param \Drupal\Core\File\FileSystemInterface $filesystem
-   *   The service for interacting with the filesystem.
+   * @param \Drupal\Core\File\FileSystemInterface $fileSystem
+   *   The service for interacting with the file system.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
    * @param \Drupal\Core\Cache\CacheTagsChecksumInterface $checksumProvider
@@ -56,8 +56,8 @@ class FilesystemBackend implements CacheBackendInterface {
    *   The path or stream wrapper URI to the folder where the cache files are
    *   stored.
    */
-  public function __construct(FileSystemInterface $filesystem, TimeInterface $time, CacheTagsChecksumInterface $checksumProvider, $path) {
-    $this->filesystem = $filesystem;
+  public function __construct(FileSystemInterface $fileSystem, TimeInterface $time, CacheTagsChecksumInterface $checksumProvider, $path) {
+    $this->fileSystem = $fileSystem;
     $this->time = $time;
     $this->checksumProvider = $checksumProvider;
     $this->path = rtrim($path, '/') . '/';
@@ -140,7 +140,7 @@ class FilesystemBackend implements CacheBackendInterface {
   public function delete($cid) {
     $filename = $this->getFilename($cid);
     if (is_file($filename)) {
-      $this->filesystem->unlink($filename);
+      $this->fileSystem->unlink($filename);
     }
   }
 
@@ -159,12 +159,12 @@ class FilesystemBackend implements CacheBackendInterface {
   public function deleteAll() {
     $this->ensureCacheFolderExists();
 
-    $iterator = $this->getFilesystemIterator();
+    $iterator = $this->getFileSystemIterator();
     foreach ($iterator as $filename) {
       // We are dealing with a flat list of files. If there are any folders
       // present these are user managed, skip them.
       if (is_file($filename)) {
-        $this->filesystem->unlink($filename);
+        $this->fileSystem->unlink($filename);
       }
     }
   }
@@ -194,7 +194,7 @@ class FilesystemBackend implements CacheBackendInterface {
   public function invalidateAll() {
     $this->ensureCacheFolderExists();
 
-    $iterator = $this->getFilesystemIterator();
+    $iterator = $this->getFileSystemIterator();
     foreach ($iterator as $filename) {
       if (is_file($filename)) {
         $item = $this->getFile($filename);
@@ -209,7 +209,7 @@ class FilesystemBackend implements CacheBackendInterface {
   public function garbageCollection() {
     $this->ensureCacheFolderExists();
 
-    $iterator = $this->getFilesystemIterator();
+    $iterator = $this->getFileSystemIterator();
     foreach ($iterator as $filename) {
       if (is_file($filename)) {
         $item = $this->getFile($filename);
@@ -228,16 +228,16 @@ class FilesystemBackend implements CacheBackendInterface {
     $this->deleteAll();
 
     // Remove the folders if they are empty.
-    $iterator = $this->getFilesystemIterator();
+    $iterator = $this->getFileSystemIterator();
     if (!$iterator->valid()) {
-      $this->filesystem->rmdir($this->path);
+      $this->fileSystem->rmdir($this->path);
     }
   }
 
   /**
    * Normalizes a cache ID in order to comply with file naming limitations.
    *
-   * There are many different filesystems in use on web servers. In order to
+   * There are many different file systems in use on web servers. In order to
    * maximize compatibility we will use filenames that only include alphanumeric
    * characters, hyphens and underscores with a max length of 255 characters.
    *
@@ -364,12 +364,12 @@ class FilesystemBackend implements CacheBackendInterface {
   }
 
   /**
-   * Returns the filesystem iterator for the current cache bin.
+   * Returns the file system iterator for the current cache bin.
    *
    * @return \FilesystemIterator
    *   The iterator.
    */
-  protected function getFilesystemIterator() {
+  protected function getFileSystemIterator() {
     return new \FilesystemIterator($this->path, \FilesystemIterator::CURRENT_AS_PATHNAME | \FilesystemIterator::SKIP_DOTS);
   }
 

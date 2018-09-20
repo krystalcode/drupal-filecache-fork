@@ -5,11 +5,11 @@ namespace Drupal\Tests\filecache\Kernel;
 use Drupal\KernelTests\Core\Cache\GenericCacheBackendUnitTestBase;
 
 /**
- * Tests the FilesystemBackend cache backend.
+ * Tests the FileSystemBackend cache backend.
  *
  * @group filecache
  */
-class FilesystemBackendTest extends GenericCacheBackendUnitTestBase {
+class FileSystemBackendTest extends GenericCacheBackendUnitTestBase {
 
   /**
    * {@inheritdoc}
@@ -37,8 +37,8 @@ class FilesystemBackendTest extends GenericCacheBackendUnitTestBase {
    * {@inheritdoc}
    */
   protected function createCacheBackend($bin) {
-    // Set the FilesystemBackend as the default cache backend.
-    $this->setSetting('cache', ['default' => 'cache.backend.filesystem']);
+    // Set the FileSystemBackend as the default cache backend.
+    $this->setSetting('cache', ['default' => 'cache.backend.file_system']);
 
     $base_path = file_default_scheme() . '://filecache';
     $cache_path_settings = [
@@ -50,7 +50,7 @@ class FilesystemBackendTest extends GenericCacheBackendUnitTestBase {
     ];
     $this->setSetting('filecache_directory', $cache_path_settings);
 
-    return $this->container->get('cache.backend.filesystem')->get($bin);
+    return $this->container->get('cache.backend.file_system')->get($bin);
   }
 
   /**
