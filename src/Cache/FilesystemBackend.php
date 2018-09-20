@@ -37,7 +37,7 @@ class FilesystemBackend implements CacheBackendInterface {
   protected $checksumProvider;
 
   /**
-   * The path or streamwrapper URI to the cache files folder.
+   * The path or stream wrapper URI to the cache files folder.
    *
    * @var string
    */
@@ -53,7 +53,7 @@ class FilesystemBackend implements CacheBackendInterface {
    * @param \Drupal\Core\Cache\CacheTagsChecksumInterface $checksumProvider
    *   The cache tags checksum provider.
    * @param string $path
-   *   The path or streamwrapper URI to the folder where the cache files are
+   *   The path or stream wrapper URI to the folder where the cache files are
    *   stored.
    */
   public function __construct(FileSystemInterface $filesystem, TimeInterface $time, CacheTagsChecksumInterface $checksumProvider, $path) {
@@ -348,7 +348,7 @@ class FilesystemBackend implements CacheBackendInterface {
    * Returns the raw, unprepared cache item from the given file.
    *
    * @param string $filename
-   *   The path or streamwrapper URI of the file to load.
+   *   The path or stream wrapper URI of the file to load.
    *
    * @return \stdClass|null
    *   The raw, unprepared cache item or NULL if the file does not exist.
