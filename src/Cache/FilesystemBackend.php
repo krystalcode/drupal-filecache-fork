@@ -333,7 +333,7 @@ class FilesystemBackend implements CacheBackendInterface {
   /**
    * Invalidates the given cache item.
    *
-   * @param \stdClass $item
+   * @param object $item
    *   The cache item.
    *
    * @throws \Exception
@@ -350,7 +350,7 @@ class FilesystemBackend implements CacheBackendInterface {
    * @param string $filename
    *   The path or stream wrapper URI of the file to load.
    *
-   * @return \stdClass|null
+   * @return object|null
    *   The raw, unprepared cache item or NULL if the file does not exist.
    */
   protected function getFile($filename) {
