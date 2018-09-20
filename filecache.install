@@ -22,7 +22,6 @@ function filecache_requirements($phase) {
   }
 
   // Check if any cache bins are using the file system cache backend.
-  $bins = Cache::getBins();
   $bins = array_filter(Cache::getBins(), function (CacheBackendInterface $backend) {
     return $backend instanceof FileSystemBackend;
   });
