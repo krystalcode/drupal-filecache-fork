@@ -102,7 +102,7 @@ class FilesystemBackend implements CacheBackendInterface {
     $filename = $this->getFilename($cid);
 
     // Validate cache tags and remove duplicates.
-    assert(Inspector::assertAllStrings($tags, 'Cache Tags must be strings.'));
+    assert(Inspector::assertAllStrings($tags), 'Cache Tags must be strings.');
     $tags = array_unique($tags);
     sort($tags);
 
