@@ -95,11 +95,11 @@ class FilesystemBackendFactory implements CacheFactoryInterface {
     $path_settings = $this->settings->get('filecache_directory');
     // Look for a cache bin specific setting.
     if (isset($path_settings['bins'][$bin])) {
-      $path = $path_settings['bins'][$bin];
+      $path = rtrim($path_settings['bins'][$bin], '/') . '/';
     }
     // Fall back to the default path.
     elseif (isset($path_settings['default'])) {
-      $path = rtrim($path_settings['default'], '/') . '/' . $bin;
+      $path = rtrim($path_settings['default'], '/') . '/' . $bin . '/';
     }
     else {
       throw new \Exception('No path has been configured for the filesystem cache backend.');
