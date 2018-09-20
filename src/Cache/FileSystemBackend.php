@@ -163,6 +163,9 @@ class FileSystemBackend implements CacheBackendInterface {
     foreach ($iterator as $filename) {
       // We are dealing with a flat list of files. If there are any folders
       // present these are user managed, skip them.
+      // @todo We should split up the files over multiple folders to avoid
+      //   having too many files in a single folder, which affects performance.
+      // @see https://www.drupal.org/project/filecache/issues/3001324
       if (is_file($filename)) {
         $this->fileSystem->unlink($filename);
       }
