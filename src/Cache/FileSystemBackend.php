@@ -287,7 +287,7 @@ class FileSystemBackend implements CacheBackendInterface {
    */
   protected function ensureCacheFolderExists() {
     if (!is_dir($this->path)) {
-      if (!mkdir($this->path, 0755, TRUE)) {
+      if (!$this->fileSystem->mkdir($this->path, 0755, TRUE)) {
         throw new \Exception('Could not create cache folder ' . $this->path);
       }
     }
