@@ -92,8 +92,8 @@ the pathname, because File Cache will automatically create subdirectories for
 each cache bin. Example:
 
 ```
-$settings['filecache_paths']['default'] = '/var/cache/filecache';
-$settings['filecache_paths']['bins']['entity'] = 'private://filecache/entity';
+$settings['filecache_directory']['default'] = '/var/cache/filecache';
+$settings['filecache_directory']['bins']['entity'] = 'private://filecache/entity';
 ```
 
 To increase performance it is possible to store the cache files on a RAM drive
