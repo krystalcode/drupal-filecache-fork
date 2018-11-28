@@ -75,7 +75,8 @@ class FileSystemBackendFactory implements CacheFactoryInterface {
    */
   public function get($bin) {
     $path = $this->getPathForBin($bin);
-    return new FileSystemBackend($this->fileSystem, $this->time, $this->checksumProvider, $path);
+    $strategy = $this->getCacheStrategyForBin($bin);
+    return new FileSystemBackend($this->fileSystem, $this->time, $this->checksumProvider, $path, $strategy);
   }
 
   /**
@@ -92,19 +93,45 @@ class FileSystemBackendFactory implements CacheFactoryInterface {
    *   Thrown when no path has been configured.
    */
   protected function getPathForBin($bin) {
-    $path_settings = $this->settings->get('filecache_directory');
+    $settings = $this->settings->get('filecache');
     // Look for a cache bin specific setting.
-    if (isset($path_settings['bins'][$bin])) {
-      $path = rtrim($path_settings['bins'][$bin], '/') . '/';
+    if (isset($settings['directory']['bins'][$bin])) {
+      $path = rtrim($settings['directory']['bins'][$bin], '/') . '/';
     }
     // Fall back to the default path.
-    elseif (isset($path_settings['default'])) {
-      $path = rtrim($path_settings['default'], '/') . '/' . $bin . '/';
+    elseif (isset($settings['directory']['default'])) {
+      $path = rtrim($settings['directory']['default'], '/') . '/' . $bin . '/';
     }
     else {
       throw new \Exception('No path has been configured for the file system cache backend.');
     }
     return $path;
+  }
+
+  /**
+   * Returns the cache strategy for the specified cache bin.
+   *
+   * @param string $bin
+   *   The cache bin for which to return the cache strategy.
+   *
+   * @return string
+   *   The cache strategy, either `FileSystemBackend::DEFAULT` or
+   *   `FileSystemBackend::PERSIST`.
+   */
+  protected function getCacheStrategyForBin($bin) {
+    $settings = $this->settings->get('filecache');
+    // Look for a cache bin specific setting.
+    if (isset($settings['strategy']['bins'][$bin])) {
+      $strategy = $settings['strategy']['bins'][$bin];
+    }
+    // Check if a default strategy is defined.
+    elseif (isset($settings['strategy']['default'])) {
+      $strategy = $settings['strategy']['default'];
+    }
+    else {
+      $strategy = FileSystemBackend::DEFAULT;
+    }
+    return $strategy;
   }
 
 }
