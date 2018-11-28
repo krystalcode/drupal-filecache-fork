@@ -21,7 +21,7 @@ class FileSystemBackend implements CacheBackendInterface {
    * Cached items are marked as permanently cached, but will be deleted when a
    * full cache clear is executed.
    */
-  const DEFAULT = 'default';
+  const STANDARD = 'standard';
 
   /**
    * Flag to indicate usage of the persistent cache strategy.

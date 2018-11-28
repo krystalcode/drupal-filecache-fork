@@ -129,7 +129,7 @@ class FileSystemBackendFactory implements CacheFactoryInterface {
       $strategy = $settings['strategy']['default'];
     }
     else {
-      $strategy = FileSystemBackend::DEFAULT;
+      $strategy = FileSystemBackend::STANDARD;
     }
     return $strategy;
   }
