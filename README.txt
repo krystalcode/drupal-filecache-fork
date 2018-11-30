@@ -124,9 +124,15 @@ $settings['filecache']['strategy']['default'] = \Drupal\filecache\Cache\FileSyst
 $settings['filecache']['strategy']['bins']['entity'] = \Drupal\filecache\Cache\FileSystemBackend::PERSIST;
 ```
 
-Please not that this will only protect against general cache clears. If individual
-cache entries are being deleted or the entire cache bin is removed then the files
-will still be deleted.
+Please not that this will only protect against general cache clears. If
+individual cache entries are being deleted or the entire cache bin is removed
+then the files will still be deleted.
+
+Warning: the persistent caching strategy is not fully conforming to the Drupal
+cache API since it will not delete the cache files on a general cache clear.
+This might cause some problems with code that expects the caches to be empty at
+this point. Please ensure to perform sufficient research and testing to fully
+understand the possible implications before using this in production.
 
 
 UNINSTALLING
