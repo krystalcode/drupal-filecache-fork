@@ -110,8 +110,8 @@ PERSISTENT CACHING
 
 By default the cache files are not persisted. This means that when a cache
 clear is executed through the user interface or command line interface the
-cache files will be deleted from storage.  This is the standard approach taken
-by Drupal core, but in some use cases this might not be desired. For example if
+cache files will be deleted from storage. This is the standard approach taken by
+Drupal core, but in some use cases this might not be desired. For example if
 data from external services is being cached then this should not necessarily be
 deleted when the internal Drupal caches are cleared.
 
@@ -124,7 +124,7 @@ $settings['filecache']['strategy']['default'] = \Drupal\filecache\Cache\FileSyst
 $settings['filecache']['strategy']['bins']['entity'] = \Drupal\filecache\Cache\FileSystemBackend::PERSIST;
 ```
 
-Please not that this will only protect against general cache clears. If
+Please note that this will only protect against general cache clears. If
 individual cache entries are being deleted or the entire cache bin is removed
 then the files will still be deleted.
 
