@@ -75,11 +75,11 @@ CACHE DIRECTORY
 ---------------
 
 As explained in the Requirements section, the cache directory must not be
-accessible through the webserver. The configuration setting is named
-`filecache_directory` and it allows to configure a default location as well as
-individual locations for each cache bin. It is possible to use absolute system
-paths (such as `/var/cache/filecache`) or stream wrappers (such as
-`private://filecache`).
+accessible through the webserver. The location of the directory has to be
+configured through a setting in `settings.php` or `settings.local.php`. You
+can configure a default location as well as individual locations for each
+cache bin. It is possible to use absolute system paths (such as
+`/var/cache/filecache`) or stream wrappers (such as `private://filecache`).
 
 File Cache will try to create the directories for you. If you manually create
 them, make sure that the owner is set to the same user as used by the web
@@ -92,8 +92,8 @@ the pathname, because File Cache will automatically create subdirectories for
 each cache bin. Example:
 
 ```
-$settings['filecache_directory']['default'] = '/var/cache/filecache';
-$settings['filecache_directory']['bins']['entity'] = 'private://filecache/entity';
+$settings['filecache']['directory']['default'] = '/var/cache/filecache';
+$settings['filecache']['directory']['bins']['entity'] = 'private://filecache/entity';
 ```
 
 To increase performance it is possible to store the cache files on a RAM drive
@@ -103,6 +103,36 @@ files disappear when the machine is restarted.
 Note that some Drupal sites may generate a lot of cache data and a RAM drive
 might run out of space. In those cases it would be advised to use a fast solid
 state drive to store the cache files.
+
+
+PERSISTENT CACHING
+------------------
+
+By default the cache files are not persisted. This means that when a cache
+clear is executed through the user interface or command line interface the
+cache files will be deleted from storage. This is the standard approach taken by
+Drupal core, but in some use cases this might not be desired. For example if
+data from external services is being cached then this should not necessarily be
+deleted when the internal Drupal caches are cleared.
+
+If you want to persist your data when caches are cleared you can configure this
+in `settings.php` (or, preferably, `settings.local.php`). You can either decide
+to turn on persistent caching by default, or for individual cache bins:
+
+```
+$settings['filecache']['strategy']['default'] = \Drupal\filecache\Cache\FileSystemBackend::PERSIST;
+$settings['filecache']['strategy']['bins']['entity'] = \Drupal\filecache\Cache\FileSystemBackend::PERSIST;
+```
+
+Please note that this will only protect against general cache clears. If
+individual cache entries are being deleted or the entire cache bin is removed
+then the files will still be deleted.
+
+Warning: the persistent caching strategy is not fully conforming to the Drupal
+cache API since it will not delete the cache files on a general cache clear.
+This might cause some problems with code that expects the caches to be empty at
+this point. Please ensure to perform sufficient research and testing to fully
+understand the possible implications before using this in production.
 
 
 UNINSTALLING

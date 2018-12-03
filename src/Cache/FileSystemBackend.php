@@ -16,6 +16,24 @@ use Drupal\Core\File\FileSystemInterface;
 class FileSystemBackend implements CacheBackendInterface {
 
   /**
+   * Flag to indicate usage of the standard cache strategy.
+   *
+   * Cached items are marked as permanently cached, but will be deleted when a
+   * full cache clear is executed.
+   */
+  const STANDARD = 'standard';
+
+  /**
+   * Flag to indicate usage of the persistent cache strategy.
+   *
+   * Cached items will not be deleted when a full cache clear is executed. They
+   * will still be deleted when individual cache items are removed (through
+   * `::delete()`, `::deleteMultiple()`, `::invalidate()`, etc.) or when the
+   * entire cache bin is removed.
+   */
+  const PERSIST = 'persist';
+
+  /**
    * The service for interacting with the file system.
    *
    * @var \Drupal\Core\File\FileSystemInterface
@@ -44,6 +62,13 @@ class FileSystemBackend implements CacheBackendInterface {
   protected $path;
 
   /**
+   * The cache strategy to use.
+   *
+   * @var string
+   */
+  protected $strategy;
+
+  /**
    * Constructs a FileBackend cache backend.
    *
    * @param \Drupal\Core\File\FileSystemInterface $fileSystem
@@ -55,12 +80,15 @@ class FileSystemBackend implements CacheBackendInterface {
    * @param string $path
    *   The path or stream wrapper URI to the folder where the cache files are
    *   stored.
+   * @param string $strategy
+   *   The cache strategy to use.
    */
-  public function __construct(FileSystemInterface $fileSystem, TimeInterface $time, CacheTagsChecksumInterface $checksumProvider, $path) {
+  public function __construct(FileSystemInterface $fileSystem, TimeInterface $time, CacheTagsChecksumInterface $checksumProvider, $path, $strategy) {
     $this->fileSystem = $fileSystem;
     $this->time = $time;
     $this->checksumProvider = $checksumProvider;
     $this->path = rtrim($path, '/') . '/';
+    $this->strategy = $strategy;
   }
 
   /**
@@ -157,19 +185,12 @@ class FileSystemBackend implements CacheBackendInterface {
    * {@inheritdoc}
    */
   public function deleteAll() {
-    $this->ensureCacheFolderExists();
-
-    $iterator = $this->getFileSystemIterator();
-    foreach ($iterator as $filename) {
-      // We are dealing with a flat list of files. If there are any folders
-      // present these are user managed, skip them.
-      // @todo We should split up the files over multiple folders to avoid
-      //   having too many files in a single folder, which affects performance.
-      // @see https://www.drupal.org/project/filecache/issues/3001324
-      if (is_file($filename)) {
-        $this->fileSystem->unlink($filename);
-      }
+    // Skip if the persisting cache strategy is used.
+    if ($this->strategy === static::PERSIST) {
+      return;
     }
+
+    $this->doDeleteAll();
   }
 
   /**
@@ -195,6 +216,11 @@ class FileSystemBackend implements CacheBackendInterface {
    * {@inheritdoc}
    */
   public function invalidateAll() {
+    // Skip if the persisting cache strategy is used.
+    if ($this->strategy === static::PERSIST) {
+      return;
+    }
+
     $this->ensureCacheFolderExists();
 
     $iterator = $this->getFileSystemIterator();
@@ -228,7 +254,7 @@ class FileSystemBackend implements CacheBackendInterface {
    * {@inheritdoc}
    */
   public function removeBin() {
-    $this->deleteAll();
+    $this->doDeleteAll();
 
     // Remove the folders if they are empty.
     $iterator = $this->getFileSystemIterator();
@@ -294,6 +320,25 @@ class FileSystemBackend implements CacheBackendInterface {
 
     if (!is_writable($this->path)) {
       throw new \Exception('Cache folder ' . $this->path . ' is not writable.');
+    }
+  }
+
+  /**
+   * Deletes all cache items in the bin.
+   */
+  protected function doDeleteAll() {
+    $this->ensureCacheFolderExists();
+
+    $iterator = $this->getFileSystemIterator();
+    foreach ($iterator as $filename) {
+      // We are dealing with a flat list of files. If there are any folders
+      // present these are user managed, skip them.
+      // @todo We should split up the files over multiple folders to avoid
+      //   having too many files in a single folder, which affects performance.
+      // @see https://www.drupal.org/project/filecache/issues/3001324
+      if (is_file($filename)) {
+        $this->fileSystem->unlink($filename);
+      }
     }
   }
 

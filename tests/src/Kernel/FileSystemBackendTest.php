@@ -42,13 +42,15 @@ class FileSystemBackendTest extends GenericCacheBackendUnitTestBase {
 
     $base_path = file_default_scheme() . '://filecache';
     $cache_path_settings = [
-      'default' => $base_path,
-      'bins' => [
-        'foo' => $base_path . '/foo',
-        'bar' => $base_path . '/bar',
+      'directory' => [
+        'default' => $base_path,
+        'bins' => [
+          'foo' => $base_path . '/foo',
+          'bar' => $base_path . '/bar',
+        ],
       ],
     ];
-    $this->setSetting('filecache_directory', $cache_path_settings);
+    $this->setSetting('filecache', $cache_path_settings);
 
     return $this->container->get('cache.backend.file_system')->get($bin);
   }
