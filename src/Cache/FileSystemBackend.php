@@ -226,8 +226,9 @@ class FileSystemBackend implements CacheBackendInterface {
     $iterator = $this->getFileSystemIterator();
     foreach ($iterator as $filename) {
       if (is_file($filename)) {
-        $item = $this->getFile($filename);
-        $this->invalidateItem($item);
+        if ($item = $this->getFile($filename)) {
+          $this->invalidateItem($item);
+        }
       }
     }
   }
@@ -241,10 +242,11 @@ class FileSystemBackend implements CacheBackendInterface {
     $iterator = $this->getFileSystemIterator();
     foreach ($iterator as $filename) {
       if (is_file($filename)) {
-        $item = $this->getFile($filename);
-        $this->prepareItem($item, TRUE);
-        if (!$item->valid) {
-          $this->delete($item->cid);
+        if ($item = $this->getFile($filename)) {
+          $this->prepareItem($item, TRUE);
+          if (!$item->valid) {
+            $this->delete($item->cid);
+          }
         }
       }
     }
