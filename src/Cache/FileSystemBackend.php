@@ -399,13 +399,18 @@ class FileSystemBackend implements CacheBackendInterface {
    *   The path or stream wrapper URI of the file to load.
    *
    * @return object|null
-   *   The raw, unprepared cache item or NULL if the file does not exist.
+   *   The raw, unprepared cache item or NULL if the file does not exist or does
+   *   not contain a serialized cache item.
    */
   protected function getFile($filename) {
     if (is_file($filename)) {
       $serialized_contents = file_get_contents($filename);
       if ($serialized_contents !== FALSE) {
-        return unserialize($serialized_contents);
+        $item = unserialize($serialized_contents);
+        // Only return the item if it could be successfully deserialized.
+        if ($item !== FALSE) {
+          return $item;
+        }
       }
     }
     return NULL;
