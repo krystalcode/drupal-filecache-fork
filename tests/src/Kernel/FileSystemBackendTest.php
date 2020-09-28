@@ -40,7 +40,7 @@ class FileSystemBackendTest extends GenericCacheBackendUnitTestBase {
     // Set the FileSystemBackend as the default cache backend.
     $this->setSetting('cache', ['default' => 'cache.backend.file_system']);
 
-    $base_path = file_default_scheme() . '://filecache';
+    $base_path = $this->container->get('config.factory')->get('system.file')->get('default_scheme') . '://filecache';
     $cache_path_settings = [
       'directory' => [
         'default' => $base_path,

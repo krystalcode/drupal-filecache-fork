@@ -2,4 +2,5 @@ name: 'File Cache'
 description: 'A cache backend that uses the file system for storage.'
 type: module
 package: 'Performance and scalability'
+core_version_requirement: ^8.5 || ^9
 core: 8.x
